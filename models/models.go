@@ -252,15 +252,13 @@ func (report *Report) String() string {
 	return response.String()
 }
 
-func (report *Report) CSV(skipHeaders bool) string {
+func (report *Report) CSV() string {
 	var rows = [][]string{}
 	var csv bytes.Buffer
 
 	var headers = []string{"OrgName", "SpaceName", "SpaceMemoryUsed", "OrgMemoryQuota", "AppsDeployed", "AppsRunning", "AppInstancesConfigured", "AppInstancesRunning", "TotalServiceInstancesDeployed", "RabbitMQServiceInstanceDeployed", "RedisServiceInstanceDeployed", "MySQLServiceInstanceDeployed"}
 
-	if !skipHeaders {
-		rows = append(rows, headers)
-	}
+	rows = append(rows, headers)
 
 	for _, org := range report.Orgs {
 		for _, space := range org.Spaces {
