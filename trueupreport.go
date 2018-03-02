@@ -19,6 +19,7 @@ type UsageReportCmd struct {
 type flagVal struct {
 	OrgName string
 	Format  string
+	SkipHeaders	bool
 }
 
 func ParseFlags(args []string) flagVal {
@@ -27,15 +28,22 @@ func ParseFlags(args []string) flagVal {
 	// Create flags
 	orgName := flagSet.String("o", "", "-o orgName")
 	format := flagSet.String("f", "format", "-f <csv>")
+	skipHeaders := flagSet.String("h", "skipheaders", "-h <skip>")
 
 	err := flagSet.Parse(args[1:])
 	if err != nil {
 
 	}
 
+	fmt.Println(skipHeaders)
+	skip := false
+	if *skipHeaders == "skip" || *skipHeaders == "skipheaders" {
+		skip = true
+	}
 	return flagVal{
 		OrgName: string(*orgName),
 		Format:  string(*format),
+		SkipHeaders: skip,
 	}
 }
 
@@ -46,17 +54,18 @@ func (cmd *UsageReportCmd) GetMetadata() plugin.PluginMetadata {
 		Version: plugin.VersionType{
 			Major: 2,
 			Minor: 0,
-			Build: 3,
+			Build: 5,
 		},
 		Commands: []plugin.Command{
 			{
 				Name:     "trueup-report",
 				HelpText: "Report AIs, SIs and memory usage for orgs and spaces",
 				UsageDetails: plugin.Usage{
-					Usage: "cf usage-report [-o orgName] [-f <csv>]",
+					Usage: "cf usage-report [-o orgName] [-f <csv>] [-h skip]",
 					Options: map[string]string{
 						"o": "organization",
 						"f": "format",
+						"h": "skipheaders",
 					},
 				},
 			},
@@ -90,7 +99,7 @@ func (cmd *UsageReportCmd) UsageReportCommand(args []string) {
 	report.Orgs = orgs
 
 	if flagVals.Format == "csv" {
-		fmt.Println(report.CSV())
+		fmt.Println(report.CSV(flagVals.SkipHeaders))
 	} else {
 		fmt.Println(report.String())
 	}

@@ -1,8 +1,5 @@
 # TrueupReport Plugin
-This CF CLI Plugin to shows memory consumption and application instances for each org and space you have permission to access.
-
-[![wercker status](https://app.wercker.com/status/8881b5530809e3636080d2df6433aada/s/master "wercker status")](https://app.wercker.com/project/bykey/8881b5530809e3636080d2df6433aada)
-
+This CF CLI Plugin to shows memory consumption and application & service instances (only part of service suite (RabbitMQ, Redis & MySQL)) for each org and space you have permission to access.
 
 #Usage
 
@@ -175,7 +172,10 @@ You have deployed 98 apps across 2 org(s), with a total of 113 app instances con
 CSV output:
 
 ```
-➜  usagereport-plugin git:(master) ✗ cf trueup-report -f csv
+you can skip header using "-h skip" flag. helps if you are running across multiple foundation and would like to append the result!
+➜  trueupreport-plugin git:(master) ✗ cf trueup-report -f csv -h skip
+
+➜  trueupreport-plugin git:(master) ✗ cf trueup-report -f csv
 OrgName, SpaceName, SpaceMemoryUsed, OrgMemoryQuota, AppsDeployed, AppsRunning, AppInstancesDeployed, AppInstancesRunning, TotalServiceInstancesDeployed, RabbitMQServiceInstanceDeployed, RedisServiceInstanceDeployed, MySQLServiceInstanceDeployed
 Central, development, 200, 25600, 4, 2, 6, 4, 0, 0, 0, 0
 Central, staging, 0, 25600, 0, 0, 0, 0, 0, 0, 0, 0

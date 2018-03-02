@@ -157,7 +157,7 @@ func (space *Space) ServiceInstancesCount(serviceType string) int {
 	return boundedServiceInstancesCount
 }
 
-func (spaces Spaces) Stats (c chan SpaceStats) {
+func (spaces Spaces) Stats (c chan SpaceStats, skipSIcount bool) {
 	for _, space := range spaces {
 		lApps := len(space.Apps)
 		rApps := space.RunningAppsCount()
@@ -165,6 +165,10 @@ func (spaces Spaces) Stats (c chan SpaceStats) {
 		lAIs := space.InstancesCount()
 		rAIs := space.RunningInstancesCount()
 		sAIs := lAIs-rAIs
+		siCount := space.ServicesCount()
+		if(skipSIcount) {
+			siCount = 0
+		}
 		c <- SpaceStats{
 			Name: space.Name,
 			DeployedAppsCount: lApps,
@@ -173,7 +177,7 @@ func (spaces Spaces) Stats (c chan SpaceStats) {
 			DeployedAppInstancesCount: lAIs,
 			RunningAppInstancesCount: rAIs,
 			StoppedAppInstancesCount: sAIs,
-			ServicesCount: space.ServicesCount(),
+			ServicesCount: siCount,
 			ConsumedMemory: space.ConsumedMemory(),
 		}
 	}
@@ -214,14 +218,14 @@ func (report *Report) String() string {
 	totalRunningInstances := 0
 	totalServiceInstances := 0
 
-	chSpaceStats := make(chan SpaceStats)
-	chOrgStats := make(chan OrgStats)
+	chOrgStats := make(chan OrgStats, len(report.Orgs))
 
 	go report.Orgs.Stats(chOrgStats)
 	for orgStats := range chOrgStats {
 		response.WriteString(fmt.Sprintf("Org %s is consuming %d MB of %d MB.\n",
 			orgStats.Name, orgStats.MemoryUsage, orgStats.MemoryQuota))
-		go orgStats.Spaces.Stats(chSpaceStats)
+		chSpaceStats := make(chan SpaceStats, len(orgStats.Spaces))
+		go orgStats.Spaces.Stats(chSpaceStats,orgStats.Name == "p-spring-cloud-services")
 		for spaceState := range chSpaceStats {
 			response.WriteString(
 				fmt.Sprintf("\tSpace %s is consuming %d MB memory (%d%%) of org quota.\n",
@@ -248,33 +252,53 @@ func (report *Report) String() string {
 	return response.String()
 }
 
-func (report *Report) CSV() string {
+func (report *Report) CSV(skipHeaders bool) string {
 	var rows = [][]string{}
 	var csv bytes.Buffer
 
 	var headers = []string{"OrgName", "SpaceName", "SpaceMemoryUsed", "OrgMemoryQuota", "AppsDeployed", "AppsRunning", "AppInstancesConfigured", "AppInstancesRunning", "TotalServiceInstancesDeployed", "RabbitMQServiceInstanceDeployed", "RedisServiceInstanceDeployed", "MySQLServiceInstanceDeployed"}
 
-	rows = append(rows, headers)
+	if !skipHeaders {
+		rows = append(rows, headers)
+	}
 
 	for _, org := range report.Orgs {
 		for _, space := range org.Spaces {
 			appsDeployed := len(space.Apps)
 
-			spaceResult := []string{
-				org.Name,
-				space.Name,
-				strconv.Itoa(space.ConsumedMemory()),
-				strconv.Itoa(org.MemoryQuota),
-				strconv.Itoa(appsDeployed),
-				strconv.Itoa(space.RunningAppsCount()),
-				strconv.Itoa(space.InstancesCount()),
-				strconv.Itoa(space.RunningInstancesCount()),
-				strconv.Itoa(space.ServicesCount()),
-				strconv.Itoa(space.ServiceInstancesCount("rabbit")),
-				strconv.Itoa(space.ServiceInstancesCount("redis")),
-				strconv.Itoa(space.ServiceInstancesCount("mysql")),
+			col1 := org.Name
+			col2 := space.Name
+			col3 := strconv.Itoa(space.ConsumedMemory())
+			col4 := strconv.Itoa(org.MemoryQuota)
+			col5 := strconv.Itoa(appsDeployed)
+			col6 := strconv.Itoa(space.RunningAppsCount())
+			col7 := strconv.Itoa(space.InstancesCount())
+			col8 := strconv.Itoa(space.RunningInstancesCount())
+			col9 := strconv.Itoa(space.ServicesCount())
+			col10 := strconv.Itoa(space.ServiceInstancesCount("rabbit"))
+			col11 := strconv.Itoa(space.ServiceInstancesCount("redis"))
+			col12 := strconv.Itoa(space.ServiceInstancesCount("mysql"))
+			if (org.Name == "p-spring-cloud-services") {
+				col9 = "0"
+				col10 = "0"
+				col11 = "0"
+				col12 = "0"
 			}
 
+			spaceResult := []string{
+				col1,
+				col2,
+				col3,
+				col4,
+				col5,
+				col6,
+				col7,
+				col8,
+				col9,
+				col10,
+				col11,
+				col12,
+			}
 			rows = append(rows, spaceResult)
 		}
 	}

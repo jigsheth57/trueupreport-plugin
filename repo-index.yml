@@ -2,7 +2,7 @@
   description: Report on memory, application and service instances usage for orgs and spaces
   version: _TAG_
   created: 2018-02-05T00:00:00Z
-  updated: 2018-02-07T00:00:00Z
+  updated: 2018-03-02T00:00:00Z
   company:
   authors:
   - name: Jignesh Sheth
